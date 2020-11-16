@@ -18,13 +18,16 @@
 #include "soc/mcpwm_periph.h"
 #include "driver/ledc.h"
 
-//#include "ds18b20.h"
+#include "ds18b20.h"
 
 /* Can use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
    or you can edit the following line and set a number here.
 */
-#define BLINK_GPIO 14
+#define BLINK_GPIO 12
 #define SERVO_GPIO 18
+#define REED_LOWER_GPIO 14
+#define REED_UPPER_GPIO 27
+#define TEMP_GPIO 19
 
 //You can get these value from the datasheet of servo you use, in general pulse width varies between 1000 to 2000 mocrosecond
 #define SERVO_MIN_PULSEWIDTH 1000 //Minimum pulse width in microsecond
@@ -44,6 +47,7 @@ static uint32_t servo_per_degree_init(uint32_t degree_of_rotation)
 TaskHandle_t task1handle = NULL;
 TaskHandle_t task2handle = NULL;
 TaskHandle_t task3handle = NULL;
+TaskHandle_t task4handle = NULL;
 
 void task1(void *arg){
 	    /* Configure the IOMUX register for pad BLINK_GPIO (some pads are
@@ -55,44 +59,25 @@ void task1(void *arg){
     gpio_pad_select_gpio(BLINK_GPIO);
     /* Set the GPIO as a push/pull output */
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
-    //gpio_set_direction(REED_UPPER_GPIO, GPIO_MODE_INPUT);
-    //int i=0;
 	while(1){
 		/* Blink off (output low) */
-		printf("Turning off the LED\n");
+		//printf("Turning off the LED\n");
         gpio_set_level(BLINK_GPIO, 0);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         /* Blink on (output high) */
-		printf("Turning on the LED\n");
+		//printf("Turning on the LED\n");
         gpio_set_level(BLINK_GPIO, 1);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-        //i++;
-        //printf("%d\n",i);
-        //vTaskDelay(1000 / portTICK_PERIOD_MS);
-        /*
-        if(gpio_get_level(REED_UPPER_GPIO) == 1){
-        	printf("High given\n");
-		}
-		else if(gpio_get_level(REED_UPPER_GPIO) == 0){
-			printf("Low given\n");
-		}
-		else{
-			printf("Something went wrong\n");
-		}
-		vTaskDelay(5000 / portTICK_PERIOD_MS);
-		*/
-        
+        vTaskDelay(2000 / portTICK_PERIOD_MS);       
 	}
 }
 
 void task2(void *arg){
 
-	//ds18b20_init(TEMP_GPIO);
-	//float temp = 0;
+	ds18b20_init(TEMP_GPIO);
+	float temp = 0;
 	while(1){
-		//temp = ds18b20_get_temp(); 
+		temp = ds18b20_get_temp(); 
 		//printf("tempperature: %f\n",temp);
-		printf("tick\n");
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 
@@ -149,6 +134,38 @@ void task3(void *arg)
     }
 }
 
+void task4(void *arg){
+    /* Set the GPIO as a push/pull output */
+    gpio_set_direction(REED_LOWER_GPIO, GPIO_MODE_INPUT);
+    gpio_set_direction(REED_UPPER_GPIO, GPIO_MODE_INPUT);
+	while(1){
+		
+        if(gpio_get_level(REED_UPPER_GPIO) == 1){
+        	printf("Magnet near upper limitswitch\n");
+		}
+		else if(gpio_get_level(REED_UPPER_GPIO) == 0){
+			printf("Magnet away upper limitswitch\n");
+		}
+		else{
+			printf("Something went wrong\n");
+		}
+		
+		
+		if(gpio_get_level(REED_LOWER_GPIO) == 1){
+        	printf("Magnet away lower limitswitch\n");
+		}
+		else if(gpio_get_level(REED_LOWER_GPIO) == 0){
+			printf("Magnet near lower limitswitch\n");
+		}
+		else{
+			printf("Something went wrong\n");
+		}
+		printf("\n");
+		
+		vTaskDelay(1000 / portTICK_PERIOD_MS);      
+	}
+}
+
 
 
 void app_main(void)
@@ -156,8 +173,9 @@ void app_main(void)
 
    	
     xTaskCreate(task1, "ledTask", 4096, NULL, 1, &task1handle);
-    xTaskCreate(task2, "tick task", 4096, NULL, 1, &task2handle);
+    xTaskCreate(task2, "temp task", 4096, NULL, 1, &task2handle);
     xTaskCreate(task3, "servo task", 4096, NULL, 1, &task3handle);
+    xTaskCreate(task4, "Reed task", 4096, NULL, 1, &task4handle);
 }
 
 
