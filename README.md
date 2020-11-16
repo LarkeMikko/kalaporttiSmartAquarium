@@ -6,7 +6,9 @@ Smart device for your aquarium
 
 ## Components
 Esp32
+
 temp sensor
+
 Reed switches
 ...
 
