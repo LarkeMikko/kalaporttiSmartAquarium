@@ -1,0 +1,20 @@
+{
+    "project_name":       "bootloader",
+    "project_path":       "C:/Users/larke/ESP/esp-idf/components/bootloader/subproject",
+    "build_dir":          "C:/Users/larke/esp-projects/kalaportti/build/bootloader",
+    "config_file":        "C:/Users/larke/esp-projects/kalaportti/sdkconfig",
+    "config_defaults":    "",
+    "app_elf":            "bootloader.elf",
+    "app_bin":            "bootloader.bin",
+    "git_revision":       "v4.1-dirty",
+    "target":             "esp32",
+    "phy_data_partition": "",
+    "monitor_baud" :      "115200",
+    "monitor_toolprefix": "xtensa-esp32-elf-",
+    "config_environment" : {
+        "COMPONENT_KCONFIGS" : "C:/Users/larke/ESP/esp-idf/components/efuse/Kconfig;C:/Users/larke/ESP/esp-idf/components/esp32/Kconfig;C:/Users/larke/ESP/esp-idf/components/esp_common/Kconfig;C:/Users/larke/ESP/esp-idf/components/log/Kconfig;C:/Users/larke/ESP/esp-idf/components/spi_flash/Kconfig",
+        "COMPONENT_KCONFIGS_PROJBUILD" : "C:/Users/larke/ESP/esp-idf/components/bootloader/Kconfig.projbuild;C:/Users/larke/ESP/esp-idf/components/esptool_py/Kconfig.projbuild;C:/Users/larke/ESP/esp-idf/components/partition_table/Kconfig.projbuild"
+    },
+    "build_components" : [ "bootloader", "bootloader_support", "efuse", "esp32", "esp_common", "esp_rom", "esptool_py", "log", "main", "micro-ecc", "partition_table", "soc", "spi_flash", "xtensa", "" ],
+    "build_component_paths" : [ "C:/Users/larke/ESP/esp-idf/components/bootloader", "C:/Users/larke/ESP/esp-idf/components/bootloader_support", "C:/Users/larke/ESP/esp-idf/components/efuse", "C:/Users/larke/ESP/esp-idf/components/esp32", "C:/Users/larke/ESP/esp-idf/components/esp_common", "C:/Users/larke/ESP/esp-idf/components/esp_rom", "C:/Users/larke/ESP/esp-idf/components/esptool_py", "C:/Users/larke/ESP/esp-idf/components/log", "C:/Users/larke/ESP/esp-idf/components/bootloader/subproject/main", "C:/Users/larke/ESP/esp-idf/components/bootloader/subproject/components/micro-ecc", "C:/Users/larke/ESP/esp-idf/components/partition_table", "C:/Users/larke/ESP/esp-idf/components/soc", "C:/Users/larke/ESP/esp-idf/components/spi_flash", "C:/Users/larke/ESP/esp-idf/components/xtensa", "" ]
+}
