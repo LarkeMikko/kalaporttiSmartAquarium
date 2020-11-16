@@ -23,11 +23,19 @@
 /* Can use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
    or you can edit the following line and set a number here.
 */
-#define BLINK_GPIO 12
-#define SERVO_GPIO 18
+#define ACTIVITY_LED_GPIO 12
+
 #define REED_LOWER_GPIO 14
-#define REED_UPPER_GPIO 27
-#define TEMP_GPIO 19
+#define REED_UPPER_GPIO 15
+
+#define LED_RED_GPIO 18
+#define LED_GREEN_GPIO 19
+#define LED_BLUE_GPIO 21
+#define PUMP_GPIO 22
+
+#define FEEDER_SERVO_GPIO 23
+
+#define TEMP_GPIO 26
 
 //You can get these value from the datasheet of servo you use, in general pulse width varies between 1000 to 2000 mocrosecond
 #define SERVO_MIN_PULSEWIDTH 1000 //Minimum pulse width in microsecond
@@ -42,8 +50,6 @@ static uint32_t servo_per_degree_init(uint32_t degree_of_rotation)
     return cal_pulsewidth;
 }
 
-
-
 TaskHandle_t task1handle = NULL;
 TaskHandle_t task2handle = NULL;
 TaskHandle_t task3handle = NULL;
@@ -56,18 +62,18 @@ void task1(void *arg){
        Technical Reference for a list of pads and their default
        functions.)
     */
-    gpio_pad_select_gpio(BLINK_GPIO);
+    gpio_pad_select_gpio(ACTIVITY_LED_GPIO);
     /* Set the GPIO as a push/pull output */
-    gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_direction(ACTIVITY_LED_GPIO, GPIO_MODE_OUTPUT);
 	while(1){
 		/* Blink off (output low) */
 		//printf("Turning off the LED\n");
-        gpio_set_level(BLINK_GPIO, 0);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        gpio_set_level(ACTIVITY_LED_GPIO, 0);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
         /* Blink on (output high) */
 		//printf("Turning on the LED\n");
-        gpio_set_level(BLINK_GPIO, 1);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);       
+        gpio_set_level(ACTIVITY_LED_GPIO, 1);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);       
 	}
 }
 
@@ -88,7 +94,7 @@ void task3(void *arg)
 {
     uint32_t angle, count;
     printf("initializing mcpwm servo control gpio......\n");
-    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, SERVO_GPIO);    //Set GPIO 18 as PWM0A, to which servo is connected
+    mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, FEEDER_SERVO_GPIO);    //Set GPIO 18 as PWM0A, to which servo is connected
 
     //2. initial mcpwm configuration
     printf("Configuring Initial Parameters of mcpwm......\n");
