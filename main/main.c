@@ -78,7 +78,7 @@ void task1(void *arg){
 
 	RGB_init(LED_RED_GPIO, LED_GREEN_GPIO, LED_BLUE_GPIO);
 	while(1){
-		
+		/*
 		printf("red\n");
 		set_RGB(255,0,0);
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -97,40 +97,33 @@ void task1(void *arg){
 		
 		printf("orange\n");
 		set_RGB(255,165,0);
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		vTaskDelay(2000 / portTICK_PERIOD_MS);
+		*/
+		printf("fade red\n");
+		fade_color(255,0,0,500,1200);
+		//vTaskDelay(3000 / portTICK_PERIOD_MS);
 		
-		printf("lavender\n");
-		set_RGB(230,230,250);
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		printf("fade green\n");
+		fade_color(0,255,0,500,1200);
+		//vTaskDelay(3000 / portTICK_PERIOD_MS);
 		
+		printf("fade blue\n");
+		fade_color(0,0,255,500,1200);
+		//vTaskDelay(3000 / portTICK_PERIOD_MS);
 		
+		printf("fade hot pink\n");
+		fade_color(255,105,180,500,1200);
+		//vTaskDelay(3000 / portTICK_PERIOD_MS);
 		
-		/* Blink off (output low) */
-		//printf("Turning off the LED\n");
-        //gpio_set_level(ACTIVITY_LED_GPIO, 0);
+		printf("fade orange\n");
+		fade_color(255,165,0,500,3000);
+		//vTaskDelay(3000 / portTICK_PERIOD_MS);
+		
+		//gpio_set_level(ACTIVITY_LED_GPIO, 0);
         //gpio_set_level(PUMP_GPIO, 0);
-        /*
-        gpio_set_level(LED_RED_GPIO, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        gpio_set_level(LED_RED_GPIO, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        
-        gpio_set_level(LED_GREEN_GPIO, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        gpio_set_level(LED_GREEN_GPIO, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        
-        gpio_set_level(LED_BLUE_GPIO, 0);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        gpio_set_level(LED_BLUE_GPIO, 1);
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-        */
-
+		//vTaskDelay(2000 / portTICK_PERIOD_MS); 
         //gpio_set_level(ACTIVITY_LED_GPIO, 1);
         //gpio_set_level(PUMP_GPIO, 1);
-        //gpio_set_level(LED_RED_GPIO, 1);
-        //gpio_set_level(LED_GREEN_GPIO, 1);
-        //gpio_set_level(LED_BLUE_GPIO, 1);
         //vTaskDelay(2000 / portTICK_PERIOD_MS);   
 	}
 }

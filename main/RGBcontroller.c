@@ -85,12 +85,15 @@ void RGB_init()
     ledc_channel_config(&ledc_channel_red);
     ledc_channel_config(&ledc_channel_green);
     ledc_channel_config(&ledc_channel_blue);
+    
+    ledc_fade_func_install(0);
 }
 
 void set_update_duty(ledc_channel_config_t *channel, int duty) {
             ledc_set_duty(channel->speed_mode, channel->channel, duty);
             ledc_update_duty(channel->speed_mode, channel->channel);
 }
+
 
 void set_color(uint8_t r, uint8_t g, uint8_t b) {
 	r=255-r;
@@ -101,9 +104,25 @@ void set_color(uint8_t r, uint8_t g, uint8_t b) {
 	set_update_duty(&ledc_channel_blue, b * MAX_DUTY / 255);
 }
 
-void set_RGB(int r,int g, int b){
-	set_color(r,g,b);
+void fade_update_duty(ledc_channel_config_t *channel, int duty, int fadetime) {
+        ledc_set_fade_with_time(channel->speed_mode, channel->channel, duty, fadetime);           
+        ledc_fade_start(channel->speed_mode, channel->channel, LEDC_FADE_NO_WAIT); 
 }
+
+void fade_color(uint8_t r, uint8_t g, uint8_t b, int fadetime, int staytime) {
+	r=255-r;
+	g=255-g;
+	b=255-b;
+	
+	if(staytime<=fadetime) staytime = fadetime;
+	
+	fade_update_duty(&ledc_channel_red, r * MAX_DUTY / 255, fadetime);
+	fade_update_duty(&ledc_channel_green, g * MAX_DUTY / 255, fadetime);
+	fade_update_duty(&ledc_channel_blue, b * MAX_DUTY / 255, fadetime);
+	vTaskDelay(staytime / portTICK_PERIOD_MS);
+}
+
+
 
 
 

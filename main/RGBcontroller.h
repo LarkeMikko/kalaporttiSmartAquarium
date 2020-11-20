@@ -16,7 +16,10 @@
 #define RGBCONTROLLER_H_
 
 void RGB_init();
+
 void set_update_duty(ledc_channel_config_t *channel, int duty);
 void set_color(uint8_t r, uint8_t g, uint8_t b);
-void set_RGB(int r,int g, int b);
+
+void fade_update_duty(ledc_channel_config_t *channel, int duty, int fadetime);
+void fade_color(uint8_t r, uint8_t g, uint8_t b, int fadetime, int staytime);
 #endif
