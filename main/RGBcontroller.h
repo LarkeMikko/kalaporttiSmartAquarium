@@ -12,11 +12,11 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef FEEDERSERVO_H_  
-#define FEEDERSERVO_H_
+#ifndef RGBCONTROLLER_H_  
+#define RGBCONTROLLER_H_
 
-void servo_init(int GPIO, int freq);
-uint32_t servo_per_degree_init(uint32_t degree_of_rotation);
-void rotate(int angle);
-void feed(int ammount, int ms);
+void RGB_init();
+void set_update_duty(ledc_channel_config_t *channel, int duty);
+void set_color(uint8_t r, uint8_t g, uint8_t b);
+void set_RGB(int r,int g, int b);
 #endif

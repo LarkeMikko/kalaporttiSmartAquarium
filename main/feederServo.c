@@ -25,7 +25,7 @@
 
 #define SERVO_MIN_PULSEWIDTH 1000 //Minimum pulse width in microsecond
 #define SERVO_MAX_PULSEWIDTH 2000 //Maximum pulse width in microsecond
-#define SERVO_MAX_DEGREE 90 //Maximum angle in degree upto which servo can rotate
+#define SERVO_MAX_DEGREE 10000 //Maximum angle in degree upto which servo can rotate
 
 int servo_gpio;
 //int init=0;
@@ -36,7 +36,6 @@ void servo_init(int gpio, int freq){
 	
     mcpwm_gpio_init(MCPWM_UNIT_0, MCPWM0A, servo_gpio);
     
-        //2. initial mcpwm configuration
     printf("Configuring Initial Parameters of mcpwm......\n");
     mcpwm_config_t pwm_config;
     pwm_config.frequency = freq;    //frequency = 50Hz, i.e. for every servo motor time period should be 20ms
@@ -45,6 +44,8 @@ void servo_init(int gpio, int freq){
     pwm_config.counter_mode = MCPWM_UP_COUNTER;
     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);    //Configure PWM0A & PWM0B with above settings
+    
+    rotate(0);
 }
 
 uint32_t servo_per_degree_init(uint32_t degree_of_rotation)
@@ -59,10 +60,18 @@ void rotate(int angle){
         mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, rotation);
 }
 
-void feed(){
-	    rotate(0);
-    	vTaskDelay(1000 / portTICK_PERIOD_MS);
-    	rotate(180);
-    	vTaskDelay(1000 / portTICK_PERIOD_MS);
+void feed(int ammount, int ms){
+	    rotate(ammount);
+	    //printf("Roll in\n");
+    	vTaskDelay(ms / portTICK_PERIOD_MS);
+    	rotate(0);
+    	//printf("Roll back\n");
+    	//vTaskDelay(1000 / portTICK_PERIOD_MS);
+}
+
+void test(void){
+	    rotate(20000);
+    	vTaskDelay(3000 / portTICK_PERIOD_MS);
+    	rotate(15000);	
 }
 

@@ -3,4 +3,5 @@ idf_component_register(SRCS 	"main.c"
 			    	"feederServo.c"
 			    	"systemTiming.c"
 			    	"ConnectWifi"
+				"RGBcontroller.c"
                     INCLUDE_DIRS ".")

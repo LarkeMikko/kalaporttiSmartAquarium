@@ -29,6 +29,7 @@
 #include "feederServo.h"
 #include "systemTiming.h"
 #include "ConnectWifi.h"
+#include "RGBcontroller.h"
 
 #include "esp_sntp.h"
 
@@ -45,8 +46,8 @@ SemaphoreHandle_t feederSem;
 #define ACTIVITY_LED_GPIO 26
 #define SW1 34
 
-#define REED_LOWER_GPIO 16
-#define REED_UPPER_GPIO 15
+#define REED_LOWER_GPIO 15
+#define REED_UPPER_GPIO 16
 
 #define LED_RED_GPIO 18
 #define LED_GREEN_GPIO 19
@@ -57,6 +58,10 @@ SemaphoreHandle_t feederSem;
 
 #define TEMP_GPIO 14
 
+#define LEDC_TEST_DUTY         (8150)
+#define LEDC_TEST_FADE_TIME    (5000)
+
+
 TaskHandle_t task1handle = NULL;
 TaskHandle_t task2handle = NULL;
 TaskHandle_t task3handle = NULL;
@@ -64,33 +69,69 @@ TaskHandle_t task4handle = NULL;
 
 
 void task1(void *arg){
-	    /* Configure the IOMUX register for pad BLINK_GPIO (some pads are
-       muxed to GPIO on reset already, but some default to other
-       functions and need to be switched to GPIO. Consult the
-       Technical Reference for a list of pads and their default
-       functions.)
-    */
     gpio_pad_select_gpio(ACTIVITY_LED_GPIO);   
-    gpio_pad_select_gpio(PUMP_GPIO);
-    gpio_pad_select_gpio(LED_GREEN_GPIO);
-    
+    //gpio_pad_select_gpio(PUMP_GPIO);
+	    
     /* Set the GPIO as a push/pull output */
     gpio_set_direction(ACTIVITY_LED_GPIO, GPIO_MODE_OUTPUT);
-    gpio_set_direction(PUMP_GPIO, GPIO_MODE_OUTPUT);
-    gpio_set_direction(LED_RED_GPIO, GPIO_MODE_OUTPUT);
+    //gpio_set_direction(PUMP_GPIO, GPIO_MODE_OUTPUT);
+
+	RGB_init(LED_RED_GPIO, LED_GREEN_GPIO, LED_BLUE_GPIO);
 	while(1){
+		
+		printf("red\n");
+		set_RGB(255,0,0);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		
+		printf("green\n");
+		set_RGB(0,255,0);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		
+		printf("blue\n");
+		set_RGB(0,0,255);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		
+		printf("hot pink\n");
+		set_RGB(255,105,180);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		
+		printf("orange\n");
+		set_RGB(255,165,0);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		
+		printf("lavender\n");
+		set_RGB(230,230,250);
+		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		
+		
+		
 		/* Blink off (output low) */
 		//printf("Turning off the LED\n");
-        gpio_set_level(ACTIVITY_LED_GPIO, 0);
-        gpio_set_level(PUMP_GPIO, 0);
+        //gpio_set_level(ACTIVITY_LED_GPIO, 0);
+        //gpio_set_level(PUMP_GPIO, 0);
+        /*
+        gpio_set_level(LED_RED_GPIO, 0);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        gpio_set_level(LED_RED_GPIO, 1);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        
         gpio_set_level(LED_GREEN_GPIO, 0);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
-        /* Blink on (output high) */
-		//printf("Turning on the LED\n");
-        gpio_set_level(ACTIVITY_LED_GPIO, 1);
-        gpio_set_level(PUMP_GPIO, 1);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
         gpio_set_level(LED_GREEN_GPIO, 1);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);   
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        
+        gpio_set_level(LED_BLUE_GPIO, 0);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        gpio_set_level(LED_BLUE_GPIO, 1);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        */
+
+        //gpio_set_level(ACTIVITY_LED_GPIO, 1);
+        //gpio_set_level(PUMP_GPIO, 1);
+        //gpio_set_level(LED_RED_GPIO, 1);
+        //gpio_set_level(LED_GREEN_GPIO, 1);
+        //gpio_set_level(LED_BLUE_GPIO, 1);
+        //vTaskDelay(2000 / portTICK_PERIOD_MS);   
 	}
 }
 
@@ -112,8 +153,10 @@ void task3(void *arg)
     while (1) {
     	if(xSemaphoreTake(feederSem, portMAX_DELAY) == pdTRUE){
     		feed(180,1000);
+    		printf("FEED\n");
     		vTaskDelay(10 / portTICK_PERIOD_MS); 
-		} 		
+		} 
+
     }
 }
 
@@ -141,7 +184,8 @@ void task4(void *arg){
 		else if(gpio_get_level(REED_UPPER_GPIO) == 0){
 			//printf("Magnet near upper limitswitch\n");
 			if(resetServo==false){
-				feed(180,1000);
+				feed(20000,1000);
+				printf("FEED\n");
 			}
 			resetServo=true;
 			
@@ -176,14 +220,164 @@ void task5(void *arg)
     	//printf("hours: %d minutes: %d seconds %d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec);
     	printf("Time in Finland: %d:%d:%d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec);
     	
-    	timeinfo = get_time(&now, "CST-1");    	
-    	printf("Time in Sweden: %d:%d:%d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec);
+    	//timeinfo = get_time(&now, "CST-1");    	
+    	//printf("Time in Sweden: %d:%d:%d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec);
     	
     	//if(timeinfo.tm_hour==11 && timeinfo.tm_min==47 && timeinfo.tm_sec== 11){
 		if(timeinfo.tm_sec % 10 == 0){
     		xSemaphoreGive(feederSem);
 		}
     	vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+}
+
+void task6(void *arg)
+{
+    	ledc_timer_config_t ledc_timer = {
+        .duty_resolution = LEDC_TIMER_13_BIT, // resolution of PWM duty
+        .freq_hz = 5000,                      // frequency of PWM signal
+        .speed_mode = LEDC_HIGH_SPEED_MODE,           // timer mode
+        .timer_num = LEDC_TIMER_1,            // timer index
+        .clk_cfg = LEDC_AUTO_CLK,              // Auto select the source clock
+    };
+    // Set configuration of timer0 for high speed channels
+    ledc_timer_config(&ledc_timer);
+
+    ledc_channel_config_t RED_channel = {
+
+        .channel    = LEDC_CHANNEL_0,
+        .duty       = 0,
+        .gpio_num   = LED_RED_GPIO,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .hpoint     = 0,
+        .timer_sel  = LEDC_TIMER_1
+    };
+    
+        ledc_channel_config_t GREEN_channel = {
+
+        .channel    = LEDC_CHANNEL_1,
+        .duty       = 0,
+        .gpio_num   = LED_GREEN_GPIO,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .hpoint     = 0,
+        .timer_sel  = LEDC_TIMER_1
+    };
+    
+        ledc_channel_config_t BLUE_channel = {
+
+        .channel    = LEDC_CHANNEL_2,
+        .duty       = 0,
+        .gpio_num   = LED_BLUE_GPIO,
+        .speed_mode = LEDC_HIGH_SPEED_MODE,
+        .hpoint     = 0,
+        .timer_sel  = LEDC_TIMER_1
+    };
+    /////////////
+    /*
+        ledc_channel_config_t ledc_channel[3] = {
+        {
+            .channel    = LEDC_CHANNEL_0,
+            .duty       = 0,
+            .gpio_num   = LED_GREEN_GPIO,
+            .speed_mode = LEDC_HIGH_SPEED_MODE,
+            .hpoint     = 0,
+            .timer_sel  = LEDC_TIMER_1
+        },
+        {
+            .channel    = LEDC_CHANNEL_0,
+            .duty       = 0,
+            .gpio_num   = LED_BLUE_GPIO,
+            .speed_mode = LEDC_HIGH_SPEED_MODE,
+            .hpoint     = 0,
+            .timer_sel  = LEDC_TIMER_1
+        },
+
+        {
+            .channel    = LEDC_CHANNEL_0,
+            .duty       = 0,
+            .gpio_num   = LED_RED_GPIO,
+            .speed_mode = LEDC_HIGH_SPEED_MODE,
+            .hpoint     = 0,
+            .timer_sel  = LEDC_TIMER_1
+        },
+    };
+    */
+    
+        
+    ledc_channel_config(&RED_channel);
+    ledc_channel_config(&GREEN_channel);
+    ledc_channel_config(&BLUE_channel);
+    ledc_fade_func_install(0);
+
+    while (1) {
+    	
+    	printf("1. LEDC fade up to duty = %d\n", LEDC_TEST_DUTY);
+            ledc_set_fade_with_time(RED_channel.speed_mode,
+                    RED_channel.channel, LEDC_TEST_DUTY, LEDC_TEST_FADE_TIME);
+                    
+            ledc_fade_start(RED_channel.speed_mode,
+                    RED_channel.channel, LEDC_FADE_NO_WAIT);
+        vTaskDelay(LEDC_TEST_FADE_TIME / portTICK_PERIOD_MS);
+
+        printf("2. LEDC fade down to duty = 0\n");
+            ledc_set_fade_with_time(RED_channel.speed_mode,
+                    RED_channel.channel, 0, LEDC_TEST_FADE_TIME);
+                    
+            ledc_fade_start(RED_channel.speed_mode,
+                    RED_channel.channel, LEDC_FADE_NO_WAIT);
+        vTaskDelay(LEDC_TEST_FADE_TIME / portTICK_PERIOD_MS);
+        
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        
+            printf("3. LEDC fade up to duty = %d\n", LEDC_TEST_DUTY);
+            ledc_set_fade_with_time(GREEN_channel.speed_mode,
+                    GREEN_channel.channel, 8150, LEDC_TEST_FADE_TIME);
+                    
+            ledc_fade_start(GREEN_channel.speed_mode,
+                    GREEN_channel.channel, LEDC_FADE_NO_WAIT);
+        vTaskDelay(LEDC_TEST_FADE_TIME / portTICK_PERIOD_MS);
+
+        printf("4. LEDC fade down to duty = 0\n");
+            ledc_set_fade_with_time(GREEN_channel.speed_mode,
+                    GREEN_channel.channel, 0, LEDC_TEST_FADE_TIME);
+                    
+            ledc_fade_start(GREEN_channel.speed_mode,
+                    GREEN_channel.channel, LEDC_FADE_NO_WAIT);
+        vTaskDelay(LEDC_TEST_FADE_TIME / portTICK_PERIOD_MS);
+        
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        
+            printf("5. LEDC fade up to duty = %d\n", LEDC_TEST_DUTY);
+            ledc_set_fade_with_time(BLUE_channel.speed_mode,
+                    BLUE_channel.channel, LEDC_TEST_DUTY, LEDC_TEST_FADE_TIME);
+                    
+            ledc_fade_start(BLUE_channel.speed_mode,
+                    BLUE_channel.channel, LEDC_FADE_NO_WAIT);
+        vTaskDelay(LEDC_TEST_FADE_TIME / portTICK_PERIOD_MS);
+
+        printf("6. LEDC fade down to duty = 0\n");
+            ledc_set_fade_with_time(BLUE_channel.speed_mode,
+                    BLUE_channel.channel, 0, LEDC_TEST_FADE_TIME);
+                    
+            ledc_fade_start(RED_channel.speed_mode,
+                    BLUE_channel.channel, LEDC_FADE_NO_WAIT);
+        vTaskDelay(LEDC_TEST_FADE_TIME / portTICK_PERIOD_MS);
+        
+/*
+        printf("3. LEDC set duty = %d without fade\n", LEDC_TEST_DUTY);
+
+            ledc_set_duty(RED_channel.speed_mode, RED_channel.channel, LEDC_TEST_DUTY);
+            ledc_update_duty(RED_channel.speed_mode, RED_channel.channel);
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+
+        printf("4. LEDC set duty = 0 without fade\n");
+
+            ledc_set_duty(RED_channel.speed_mode, RED_channel.channel, 0);
+            ledc_update_duty(RED_channel.speed_mode, RED_channel.channel);
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+*/
     }
 }
 
@@ -198,14 +392,15 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 	
-    wifi_init_sta();
-	init_system_time("pool.ntp.org");
+    //wifi_init_sta();
+	//init_system_time("pool.ntp.org");
 	
 	feederSem = xSemaphoreCreateBinary();
    	
-    //xTaskCreate(task1, "ledTask", 4096, NULL, 1, &task1handle);
+    xTaskCreate(task1, "ledTask", 4096, NULL, 1, &task1handle);
     //xTaskCreate(task2, "temp task", 4096, NULL, 1, &task2handle);
-    xTaskCreate(task3, "servo task", 4096, NULL, 1, &task3handle);
+    //xTaskCreate(task3, "servo task", 4096, NULL, 1, &task3handle);
     //xTaskCreate(task4, "Reed task", 4096, NULL, 1, &task4handle); 
-    xTaskCreate(task5, "time task", 4096, NULL, 1, NULL);
+    //xTaskCreate(task5, "time task", 4096, NULL, 1, NULL);
+    //xTaskCreate(task6, "ledStrip task", 4096, NULL, 1, NULL);
 }
