@@ -8,20 +8,9 @@
 
 #include "RGBcontroller.h"
 
-//#define LEDC_HS_TIMER          LEDC_TIMER_0
-//#define LEDC_HS_MODE           LEDC_HIGH_SPEED_MODE
-//#define LEDC_HS_CH0_GPIO       (18)
-//#define LEDC_HS_CH0_CHANNEL    LEDC_CHANNEL_0
-//#define LEDC_HS_CH1_GPIO       (19)
-//#define LEDC_HS_CH1_CHANNEL    LEDC_CHANNEL_1
-//#define LEDC_LS_CH2_GPIO       (21)
-//#define LEDC_LS_CH2_CHANNEL    LEDC_CHANNEL_2
-
-//#define LEDC_TEST_CH_NUM       (3)
 #define LED_RED_GPIO 18
 #define LED_GREEN_GPIO 19
 #define LED_BLUE_GPIO 21
-
 
 const int MAX_DUTY = pow(2, LEDC_TIMER_13_BIT);
 
@@ -80,7 +69,7 @@ void RGB_init()
     gpio_set_level(LED_BLUE_GPIO, 0);
   
     ledc_timer_config(&ledc_timer0);
-    ledc_timer_config(&ledc_timer1);
+
         
     ledc_channel_config(&ledc_channel_red);
     ledc_channel_config(&ledc_channel_green);
@@ -99,6 +88,7 @@ void set_color(uint8_t r, uint8_t g, uint8_t b) {
 	r=255-r;
 	g=255-g;
 	b=255-b;
+	
 	set_update_duty(&ledc_channel_red, r * MAX_DUTY / 255);
 	set_update_duty(&ledc_channel_green, g * MAX_DUTY / 255);
 	set_update_duty(&ledc_channel_blue, b * MAX_DUTY / 255);

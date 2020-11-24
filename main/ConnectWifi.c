@@ -16,12 +16,12 @@
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-#define WIFI_SSID      "Mikko fifi"
+#define WIFI_SSID      "LarkeNet 2.4GHz"
 #define WIFI_PASS      "mikkonet"
 #define WIFI_MAXIMUM_RETRY  5
 
 static EventGroupHandle_t s_wifi_event_group;
-static const char *TAG = "wifi station";
+static const char *TAGw = "wifi station";
 static int s_retry_num = 0;
 
 void event_handler(void* arg, esp_event_base_t event_base,
@@ -33,20 +33,18 @@ void event_handler(void* arg, esp_event_base_t event_base,
         if (s_retry_num < WIFI_MAXIMUM_RETRY) {
             esp_wifi_connect();
             s_retry_num++;
-            ESP_LOGI(TAG, "retry to connect to the AP");
+            ESP_LOGI(TAGw, "retry to connect to the AP");
         } else {
             xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
         }
-        ESP_LOGI(TAG,"connect to the AP fail");
+        ESP_LOGI(TAGw,"connect to the AP fail");
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGI(TAGw, "got ip:" IPSTR, IP2STR(&event->ip_info.ip));
         s_retry_num = 0;
         xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
     }
 }
-
-
 
 void wifi_init_sta()
 {
@@ -62,7 +60,7 @@ void wifi_init_sta()
 
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL));
-
+	
     wifi_config_t wifi_config = {
         .sta = {
             .ssid = WIFI_SSID,
@@ -74,11 +72,12 @@ void wifi_init_sta()
             },
         },
     };
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
+    
+    //ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
+    //ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
     ESP_ERROR_CHECK(esp_wifi_start() );
 
-    ESP_LOGI(TAG, "wifi_init_sta finished.");
+    ESP_LOGI(TAGw, "wifi_init_sta finished.");
     esp_wifi_connect();
 	
     EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
@@ -87,11 +86,11 @@ void wifi_init_sta()
             pdFALSE,
             portMAX_DELAY);
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",WIFI_SSID,WIFI_PASS);
+        ESP_LOGI(TAGw, "connected to ap SSID:%s password:%s",WIFI_SSID,WIFI_PASS);
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",WIFI_SSID,WIFI_PASS);
+        ESP_LOGI(TAGw, "Failed to connect to SSID:%s, password:%s",WIFI_SSID,WIFI_PASS);
     } else {
-        ESP_LOGE(TAG, "UNEXPECTED EVENT");
+        ESP_LOGE(TAGw, "UNEXPECTED EVENT");
     }
 
     ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler));

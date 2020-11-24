@@ -19,4 +19,5 @@ void servo_init(int GPIO, int freq);
 uint32_t servo_per_degree_init(uint32_t degree_of_rotation);
 void rotate(int angle);
 void feed(int ammount, int ms);
+void test(void);
 #endif
