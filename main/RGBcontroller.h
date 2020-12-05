@@ -22,4 +22,9 @@ void set_color(uint8_t r, uint8_t g, uint8_t b);
 
 void fade_update_duty(ledc_channel_config_t *channel, int duty, int fadetime);
 void fade_color(uint8_t r, uint8_t g, uint8_t b, int fadetime, int staytime);
+void rainbowFade(int fadetime,int staytime);
+
+void str_tolower(char *str);
+int extract_rgb_values(const char *data, uint8_t *red, uint8_t *green, uint8_t *blue);
+void setOverMQTT(const char *data, int fadetime, int staytime);
 #endif

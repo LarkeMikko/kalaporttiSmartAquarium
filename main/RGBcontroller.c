@@ -1,10 +1,12 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <ctype.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/ledc.h"
 #include "esp_err.h"
+#include <string.h>
 
 #include "RGBcontroller.h"
 
@@ -104,15 +106,68 @@ void fade_color(uint8_t r, uint8_t g, uint8_t b, int fadetime, int staytime) {
 	g=255-g;
 	b=255-b;
 	
-	if(staytime<=fadetime) staytime = fadetime;
+	//if(staytime<=fadetime) staytime = fadetime;
 	
 	fade_update_duty(&ledc_channel_red, r * MAX_DUTY / 255, fadetime);
 	fade_update_duty(&ledc_channel_green, g * MAX_DUTY / 255, fadetime);
 	fade_update_duty(&ledc_channel_blue, b * MAX_DUTY / 255, fadetime);
-	vTaskDelay(staytime / portTICK_PERIOD_MS);
+	vTaskDelay((fadetime + staytime) / portTICK_PERIOD_MS);
 }
 
+void rainbowFade(int fadetime,int staytime){
+    	fade_color(255,0,0,fadetime,staytime);
+		fade_color(255,255,0,fadetime,staytime);
+		fade_color(0,255,0,fadetime,staytime);
+		fade_color(0,255,255,fadetime,staytime);
+		fade_color(0,0,255,fadetime,staytime);
+		fade_color(255,0,255,fadetime,staytime);
+}
 
+void str_tolower(char *str) {
+    while (*str) {
+        *str = tolower((char) *str);
+        ++str;
+    }
+}
+
+// returns 0 if corrcetly extracts data
+// returns -1 if fails to extract data
+int extract_rgb_values(const char *data, uint8_t *red, uint8_t *green, uint8_t *blue) {
+    char str[8]; // length 8 has space for #, six digits and terminating null '\0'
+    strncpy(str, data, 8); // copy the source data so when we convert to lowercase the original data is not changed
+    str_tolower(str); //
+    unsigned int r;
+    unsigned int b;
+    unsigned int g;
+
+    //we need to use %x to extract lowercase hex values
+    // make sure there is the leading # and 3 pairs of hexadecimal digits after
+    if (sscanf(str, "#%2x%2x%2x", &r, &g, &b) == 3) {
+        //printf("r = %u, g = %u, b = %u\n", r, g, b);
+        *red   = r;
+        *green = g;
+        *blue  = b;
+        return 0;
+    }
+    else {
+        //printf("Error in extracting the data\n");
+        return -1;
+    }
+}
+
+void setOverMQTT(const char *data, int fadetime, int staytime){
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+
+    if (extract_rgb_values(data, &red, &green, &blue) == -1) {
+        //printf("fail\n");
+    }
+    else {
+        //printf("r = %u, g = %u, b = %u\n", red, green, blue);
+        fade_color(red,green,blue,fadetime,staytime);
+    }
+}
 
 
 
