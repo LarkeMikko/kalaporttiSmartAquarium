@@ -45,7 +45,7 @@ void servo_init(int gpio, int freq){
     pwm_config.duty_mode = MCPWM_DUTY_MODE_0;
     mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config);    //Configure PWM0A & PWM0B with above settings
     
-    rotate(1210);
+    rotate(1420);
 }
 
 uint32_t servo_per_degree_init(uint32_t degree_of_rotation)

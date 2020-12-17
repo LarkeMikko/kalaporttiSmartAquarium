@@ -10,9 +10,9 @@
 
 #include "RGBcontroller.h"
 
-#define LED_RED_GPIO 18
-#define LED_GREEN_GPIO 19
-#define LED_BLUE_GPIO 21
+#define LED_RED_GPIO 5
+#define LED_GREEN_GPIO 18
+#define LED_BLUE_GPIO 19
 
 const int MAX_DUTY = pow(2, LEDC_TIMER_13_BIT);
 

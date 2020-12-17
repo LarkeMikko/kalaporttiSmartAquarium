@@ -1,7 +1,6 @@
 /* 
-	Kalaportti smart aquarium
+	Kalaportti smart
 */
-
 #include <stdio.h>
 #include <string.h>
 #include "freertos/FreeRTOS.h"
@@ -14,11 +13,12 @@
 #include "driver/mcpwm.h"
 #include "soc/mcpwm_periph.h"
 #include "driver/ledc.h"
+
+
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
-#include "mqtt_client.h"
 
 #include "ds18b20.h"
 #include "feederServo.h"
@@ -26,28 +26,36 @@
 #include "ConnectWifi.h"
 #include "RGBcontroller.h"
 
-SemaphoreHandle_t feederSem;
-SemaphoreHandle_t submitSem;
-SemaphoreHandle_t resetSem;
+#include <stdlib.h>
+
+#include "mqtt_client.h"
 
 esp_mqtt_client_handle_t mqtt_client;
 int mqtt_connected = 0;
 static const char *TAG = "MQTT_EXAMPLE";
 
-#define REED_LOWER_GPIO 32
-#define REED_UPPER_GPIO 33
+SemaphoreHandle_t feederSem;
+SemaphoreHandle_t submitSem;
+SemaphoreHandle_t resetSem;
 
-#define LED_RED_GPIO 18
-#define LED_GREEN_GPIO 19
-#define LED_BLUE_GPIO 21
+#if 0
+	#define REED_LOWER_GPIO 34
+	#define REED_UPPER_GPIO 35
+#else
+	#define REED_LOWER_GPIO 26
+	#define REED_UPPER_GPIO 27
+#endif
 
-#define PUMP_GPIO 22
+#define LED_RED_GPIO 5
+#define LED_GREEN_GPIO 18
+#define LED_BLUE_GPIO 19
+#define PUMP_GPIO 21
 
 #define FEEDER_SERVO_GPIO 23
 
-#define TEMP_GPIO 14
+#define TEMP_GPIO 25
 
-#define BROKER_URL "mqtt://largist:aio_ZmVe53sldKLMRfyvYaqwJ5CecOv1@io.adafruit.com"
+#define BROKER_URL "mqtt://largist:aio_mzIY68BY3V5lreaOxVOyS155qR8u@io.adafruit.com"
 #define IO_TOPIC_TEMP "largist/feeds/temperature"
 #define IO_TOPIC_COLOR "largist/feeds/Color"
 #define IO_TOPIC_PUMP "largist/feeds/toggle"
@@ -79,17 +87,26 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
 
-			//SET STARTING VALUES ON MQTT SERVER
-			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_PUMP, "ON", 0, 1, 0);
+			//PUBLISH STARTING VALUES TO MQTT SERVER
+			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_PUMP, pumpValue, 0, 1, 0);
             ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
-			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_COLOR, "#ffffff", 0, 1, 0);
+			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_COLOR, hexColor, 0, 1, 0);
             ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
-			//msg_id = esp_mqtt_client_publish(client, IO_TOPIC_TEXTBOX, "Water level is good", 0, 1, 0);
+			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_TEXTBOX, "Water level is good", 0, 1, 0);
             ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
 			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_INDICATOR, "0", 0, 1, 0);
+            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+
+			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_FEEDHOUR, feedHour, 0, 1, 0);
+            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+
+			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_FEEDMINUTE, feedMinute, 0, 1, 0);
+            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+
+			msg_id = esp_mqtt_client_publish(client, IO_TOPIC_FEEDSECOND, feedSecond, 0, 1, 0);
             ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
             mqtt_connected = 1;
@@ -202,18 +219,32 @@ void task1(void *arg){
 		//rainbowFade(1500,1000);
 		setOverMQTT(hexColor,1000,0);
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		/*
+		if(strcmp(hexColor,"#123456")==0){
+			rainbowFade(750,0);
+		}
+		else{
+			setOverMQTT(hexColor,1000,0);
+			vTaskDelay(1000 / portTICK_PERIOD_MS);
+		}
+		*/
 	}
 }
 
 void task2(void *arg){
 	ds18b20_init(TEMP_GPIO);
 	gpio_set_direction(TEMP_GPIO, GPIO_MODE_INPUT);
+	gpio_pullup_en(TEMP_GPIO);
+	gpio_pad_select_gpio(TEMP_GPIO);
+	
 	float temp = 0;
 	char buf[100];
 
 	while(1){
 		temp = ds18b20_get_temp();
+		
 		if(temp<0 || temp>84){
+			printf("ERROR tempperature: %f\n",temp);
 			temp = ds18b20_get_temp();
 		} 
 		else{
@@ -227,15 +258,35 @@ void task2(void *arg){
 	}
 }
 
+
 void task3(void *arg)
 {	
     servo_init(FEEDER_SERVO_GPIO,50);
+	int i;
     while (1) {
+		
     	if(xSemaphoreTake(feederSem, portMAX_DELAY) == pdTRUE){
-			rotate(710);
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			rotate(1210);
-		}  
+			printf("spin\n");
+			rotate(1000);
+			vTaskDelay(1500 / portTICK_PERIOD_MS);
+			rotate(1440);
+		}
+		vTaskDelay(100 / portTICK_PERIOD_MS); 
+		
+		/*
+		for(i=1000;i<2000;i++){
+			printf("%d\n",i);
+			rotate(i);
+			vTaskDelay(100 / portTICK_PERIOD_MS);
+		}
+		*/
+		/*
+		vTaskDelay(3000 / portTICK_PERIOD_MS);
+		rotate(1940);
+		vTaskDelay(1500 / portTICK_PERIOD_MS);
+		rotate(1440);
+		*/
+
     }
 }
 
@@ -251,6 +302,25 @@ void task4(void *arg){
     gpio_set_direction(REED_UPPER_GPIO, GPIO_MODE_INPUT);
 	bool levelNotGood=false;
 	while(1){
+		/*
+		if(gpio_get_level(REED_UPPER_GPIO) == 0){
+			printf("Near switch 1\n");
+		}
+		else if(gpio_get_level(REED_UPPER_GPIO) == 1){
+			printf("Away switch 1\n");
+		}
+
+		if(gpio_get_level(REED_LOWER_GPIO) == 0){
+			printf("Near switch 2\n");
+		}
+		else if(gpio_get_level(REED_LOWER_GPIO) == 1){
+			printf("Away switch 2\n"); 
+		}
+		*/
+		printf("switch1 = %d, switch2 = %d\n\n", gpio_get_level(REED_LOWER_GPIO), gpio_get_level(REED_UPPER_GPIO)); 
+
+
+		
 		if(gpio_get_level(REED_UPPER_GPIO) == 0 && !levelNotGood){
 			esp_mqtt_client_publish(mqtt_client, IO_TOPIC_INDICATOR, "1", 0, 1, 0);
 			esp_mqtt_client_publish(mqtt_client, IO_TOPIC_TEXTBOX, "Water level is too high", 0, 1, 0);
@@ -266,6 +336,7 @@ void task4(void *arg){
 			esp_mqtt_client_publish(mqtt_client, IO_TOPIC_TEXTBOX, "Water level is good", 0, 1, 0);
 			levelNotGood=false;
 		}
+		
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
@@ -280,10 +351,12 @@ void task5(void *arg)
 			sscanf(feedHour, "%d", &updatedFeedHH);
 			sscanf(feedMinute, "%d", &updatedFeedMM);
 			sscanf(feedSecond, "%d", &updatedFeedSS);
+			printf("Feed time set %d  %d  %d\n",updatedFeedHH,updatedFeedMM,updatedFeedSS);
 		}
 		timeinfo = get_time(&now, "CST-2");    	
     	printf("Time in Finland: %d:%d:%d\n",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec);	
     	if(timeinfo.tm_hour==updatedFeedHH && timeinfo.tm_min==updatedFeedMM && timeinfo.tm_sec== updatedFeedSS){
+			printf("test\n");
     		xSemaphoreGive(feederSem);
 		}
     	vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -295,6 +368,7 @@ void task6(void *arg)
     gpio_pad_select_gpio(PUMP_GPIO);
 	    
     gpio_set_direction(PUMP_GPIO, GPIO_MODE_OUTPUT);
+	gpio_set_level(PUMP_GPIO, 0);
     while (1) {
 		if(strcmp(pumpValue,"ON")==0){
 			gpio_set_level(PUMP_GPIO, 1);
@@ -315,19 +389,27 @@ void app_main(void)
       ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+
+	esp_log_level_set("*", ESP_LOG_INFO);
+    esp_log_level_set("MQTT_CLIENT", ESP_LOG_VERBOSE);
+    esp_log_level_set("TRANSPORT_TCP", ESP_LOG_VERBOSE);
+    esp_log_level_set("TRANSPORT_SSL", ESP_LOG_VERBOSE);
+    esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
+    esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
 	
     wifi_init_sta();
 	init_system_time("pool.ntp.org");
 	mqtt_app_start();
 	
 	feederSem = xSemaphoreCreateBinary();
+
 	submitSem = xSemaphoreCreateBinary();
 	resetSem = xSemaphoreCreateBinary();
    	
-    xTaskCreate(task1, "ledTask", 4096, NULL, 1, &task1handle);
-    xTaskCreate(task2, "temp task", 4096, NULL, 1, &task2handle);
-    xTaskCreate(task3, "servo task", 4096, NULL, 1, &task3handle);
-    xTaskCreate(task4, "Reed task", 4096, NULL, 1, &task4handle); 
+    xTaskCreate(task1, "ledTask", 4096, NULL, 1, NULL);
+    xTaskCreate(task2, "temp task", 4096, NULL, 1, NULL);
+    xTaskCreate(task3, "servo task", 4096, NULL, 1, NULL);
+    xTaskCreate(task4, "Reed task", 4096, NULL, 1, NULL); 
     xTaskCreate(task5, "time task", 4096, NULL, 1, NULL);
 	xTaskCreate(task6, "pump task", 4096, NULL, 1, NULL);
 }

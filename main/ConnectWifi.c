@@ -17,6 +17,7 @@
 #define WIFI_FAIL_BIT      BIT1
 
 #define WIFI_SSID      "LarkeNet 2.4GHz"
+//#define WIFI_SSID      "Mikko fifi"
 #define WIFI_PASS      "mikkonet"
 #define WIFI_MAXIMUM_RETRY  5
 
