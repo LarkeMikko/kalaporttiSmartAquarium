@@ -1,5 +1,5 @@
 /* 
-	Kalaportti smart
+	Kalaportti smart aquarium
 */
 #include <stdio.h>
 #include <string.h>
@@ -38,13 +38,8 @@ SemaphoreHandle_t feederSem;
 SemaphoreHandle_t submitSem;
 SemaphoreHandle_t resetSem;
 
-#if 0
-	#define REED_LOWER_GPIO 34
-	#define REED_UPPER_GPIO 35
-#else
-	#define REED_LOWER_GPIO 26
-	#define REED_UPPER_GPIO 27
-#endif
+#define REED_LOWER_GPIO 26
+#define REED_UPPER_GPIO 27
 
 #define LED_RED_GPIO 5
 #define LED_GREEN_GPIO 18
@@ -55,29 +50,40 @@ SemaphoreHandle_t resetSem;
 
 #define TEMP_GPIO 25
 
-#define BROKER_URL "mqtt://largist:aio_mzIY68BY3V5lreaOxVOyS155qR8u@io.adafruit.com"
-#define IO_TOPIC_TEMP "largist/feeds/temperature"
-#define IO_TOPIC_COLOR "largist/feeds/Color"
-#define IO_TOPIC_PUMP "largist/feeds/toggle"
-#define IO_TOPIC_FEEDHOUR "largist/feeds/hour"
-#define IO_TOPIC_FEEDMINUTE "largist/feeds/minute"
-#define IO_TOPIC_FEEDSECOND "largist/feeds/second"
-#define IO_TOPIC_BUTTON "largist/feeds/button"
-#define IO_TOPIC_TEXTBOX "largist/feeds/textbox"
-#define IO_TOPIC_INDICATOR "largist/feeds/waterlevel"
-#define IO_TOPIC_RESET "largist/feeds/reset"
+/*
+authentication for adafruit IO MQTT broker
+change [username] to your username and [key] to your active key
+*/
+#define BROKER_URL "mqtt://[username]:[key]@io.adafruit.com"
+
+/*
+connection to adafruit IO feeds
+uses form [username]/feeds/[feedname]
+*/
+#define IO_TOPIC_TEMP "[username]/feeds/temperature"
+#define IO_TOPIC_COLOR "[username]/feeds/Color"
+#define IO_TOPIC_PUMP "[username]/feeds/toggle"
+#define IO_TOPIC_FEEDHOUR "[username]/feeds/hour"
+#define IO_TOPIC_FEEDMINUTE "[username]/feeds/minute"
+#define IO_TOPIC_FEEDSECOND "[username]/feeds/second"
+#define IO_TOPIC_BUTTON "[username]/feeds/button"
+#define IO_TOPIC_TEXTBOX "[username]/feeds/textbox"
+#define IO_TOPIC_INDICATOR "[username]/feeds/waterlevel"
+#define IO_TOPIC_RESET "[username]/feeds/reset"
 
 TaskHandle_t task1handle = NULL;
 TaskHandle_t task2handle = NULL;
 TaskHandle_t task3handle = NULL;
 TaskHandle_t task4handle = NULL;
 
+//Static variables for MQTT data
 static char hexColor[8]="#ffffff";
 static char pumpValue[4]="ON";
 static char feedHour[3]="12";
 static char feedMinute[3]="0";
 static char feedSecond[3]="0";
 
+//Event handler for MQTT event
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 {
     esp_mqtt_client_handle_t client = event->client;
@@ -112,7 +118,6 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
             mqtt_connected = 1;
 
 			//SET SUBSCRIBTIONS
-
             msg_id = esp_mqtt_client_subscribe(client, IO_TOPIC_COLOR, 0);
             ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
@@ -154,6 +159,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 			char dataBuf[25];
 			char topicBuf[25];
 			
+			//Convert data received from MQTT to useable form and store data to proper variables or send semaphore flags
             printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
             printf("DATA=%.*s\r\n", event->data_len, event->data);
 			strncpy(dataBuf,event->data,event->data_len);
@@ -202,6 +208,7 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 	vTaskDelay(500 / portTICK_PERIOD_MS);
 }
 
+//Function for starting MQTT connection
 static void mqtt_app_start(void)
 {
     esp_mqtt_client_config_t mqtt_cfg = {
@@ -213,24 +220,20 @@ static void mqtt_app_start(void)
     esp_mqtt_client_start(client);
 }
 
+/*
+freeRTOS tasks
+*/
+
+//RGB LED
 void task1(void *arg){
 	RGB_init();
 	while(1){
-		//rainbowFade(1500,1000);
 		setOverMQTT(hexColor,1000,0);
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
-		/*
-		if(strcmp(hexColor,"#123456")==0){
-			rainbowFade(750,0);
-		}
-		else{
-			setOverMQTT(hexColor,1000,0);
-			vTaskDelay(1000 / portTICK_PERIOD_MS);
-		}
-		*/
 	}
 }
 
+//Temperature sensor
 void task2(void *arg){
 	ds18b20_init(TEMP_GPIO);
 	gpio_set_direction(TEMP_GPIO, GPIO_MODE_INPUT);
@@ -258,7 +261,7 @@ void task2(void *arg){
 	}
 }
 
-
+//Feeder
 void task3(void *arg)
 {	
     servo_init(FEEDER_SERVO_GPIO,50);
@@ -271,25 +274,11 @@ void task3(void *arg)
 			vTaskDelay(1500 / portTICK_PERIOD_MS);
 			rotate(1440);
 		}
-		vTaskDelay(100 / portTICK_PERIOD_MS); 
-		
-		/*
-		for(i=1000;i<2000;i++){
-			printf("%d\n",i);
-			rotate(i);
-			vTaskDelay(100 / portTICK_PERIOD_MS);
-		}
-		*/
-		/*
-		vTaskDelay(3000 / portTICK_PERIOD_MS);
-		rotate(1940);
-		vTaskDelay(1500 / portTICK_PERIOD_MS);
-		rotate(1440);
-		*/
-
+		vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
+//Water level
 void task4(void *arg){
 	
 	gpio_pullup_en(REED_LOWER_GPIO);
@@ -302,25 +291,9 @@ void task4(void *arg){
     gpio_set_direction(REED_UPPER_GPIO, GPIO_MODE_INPUT);
 	bool levelNotGood=false;
 	while(1){
-		/*
-		if(gpio_get_level(REED_UPPER_GPIO) == 0){
-			printf("Near switch 1\n");
-		}
-		else if(gpio_get_level(REED_UPPER_GPIO) == 1){
-			printf("Away switch 1\n");
-		}
 
-		if(gpio_get_level(REED_LOWER_GPIO) == 0){
-			printf("Near switch 2\n");
-		}
-		else if(gpio_get_level(REED_LOWER_GPIO) == 1){
-			printf("Away switch 2\n"); 
-		}
-		*/
 		printf("switch1 = %d, switch2 = %d\n\n", gpio_get_level(REED_LOWER_GPIO), gpio_get_level(REED_UPPER_GPIO)); 
 
-
-		
 		if(gpio_get_level(REED_UPPER_GPIO) == 0 && !levelNotGood){
 			esp_mqtt_client_publish(mqtt_client, IO_TOPIC_INDICATOR, "1", 0, 1, 0);
 			esp_mqtt_client_publish(mqtt_client, IO_TOPIC_TEXTBOX, "Water level is too high", 0, 1, 0);
@@ -336,11 +309,11 @@ void task4(void *arg){
 			esp_mqtt_client_publish(mqtt_client, IO_TOPIC_TEXTBOX, "Water level is good", 0, 1, 0);
 			levelNotGood=false;
 		}
-		
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
+		vTaskDelay(500 / portTICK_PERIOD_MS);
 	}
 }
 
+//System time
 void task5(void *arg)
 {
     time_t now;
@@ -363,6 +336,7 @@ void task5(void *arg)
     }
 }
 
+//Water pump
 void task6(void *arg)
 { 
     gpio_pad_select_gpio(PUMP_GPIO);
@@ -390,6 +364,7 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
+	//Set log topics
 	esp_log_level_set("*", ESP_LOG_INFO);
     esp_log_level_set("MQTT_CLIENT", ESP_LOG_VERBOSE);
     esp_log_level_set("TRANSPORT_TCP", ESP_LOG_VERBOSE);
@@ -397,12 +372,12 @@ void app_main(void)
     esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
     esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
 	
+	//Initialize internet based services
     wifi_init_sta();
 	init_system_time("pool.ntp.org");
 	mqtt_app_start();
 	
 	feederSem = xSemaphoreCreateBinary();
-
 	submitSem = xSemaphoreCreateBinary();
 	resetSem = xSemaphoreCreateBinary();
    	

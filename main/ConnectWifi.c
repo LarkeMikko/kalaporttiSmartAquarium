@@ -16,9 +16,8 @@
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-#define WIFI_SSID      "LarkeNet 2.4GHz"
-//#define WIFI_SSID      "Mikko fifi"
-#define WIFI_PASS      "mikkonet"
+#define WIFI_SSID      "[Your SSID]"
+#define WIFI_PASS      "[Your password]"
 #define WIFI_MAXIMUM_RETRY  5
 
 static EventGroupHandle_t s_wifi_event_group;

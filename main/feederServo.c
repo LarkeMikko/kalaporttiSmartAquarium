@@ -56,29 +56,6 @@ uint32_t servo_per_degree_init(uint32_t degree_of_rotation)
 }
 
 void rotate(int angle){
-    //angle = angle - 290;
-	    //uint32_t rotation = servo_per_degree_init(angle);
-        //mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, rotation);
         mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, angle);
-}
-
-void feed(int ammount, int ms){
-	    rotate(ammount);
-	    //printf("Roll in\n");
-    	vTaskDelay(ms / portTICK_PERIOD_MS);
-    	rotate(0);
-    	//printf("Roll back\n");
-    	//vTaskDelay(1000 / portTICK_PERIOD_MS);
-}
-
-void test(void){
-		for(int i=0; i<180; i++){
-			rotate(i);
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-		}	
-		for(int i=180; i>0; i--){
-			rotate(i);
-			vTaskDelay(10 / portTICK_PERIOD_MS);
-		}	
 }
 
